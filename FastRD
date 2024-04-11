@@ -1,0 +1,66 @@
+include("graph.jl")
+include("core.jl")
+include("bb.jl")
+include("meth.jl")
+
+
+using LinearAlgebra
+using Laplacians
+using SparseArrays
+
+
+
+fname = open("filename.txt", "r")
+str   = readline(fname);
+nn     = parse(Int, str);
+
+
+for nnnn=1:nn 
+
+  
+    str = readline(fname);
+    str = split(str);
+    G   = get_graph(str[1]);
+    on=G.n;om=G.m;
+    Gc=findconnect(G)
+    G=Gc;
+    n=G.n;m=G.m;
+    L=lapsp(G);
+    A=adjsp(G);
+    B=getB(G); 
+
+    t1=time();
+
+    eps=0.1;
+    t=Int(round(log(n)/eps^2/5)+1);
+    Z=zeros(t,n);
+    f=approxchol_lap(A);
+    for i=1:t
+         Q=randn(1,m);
+         QB=Q*B;
+         Z[i,:]=f(QB[1,:]);
+    end
+
+    new_lab=Z';
+    K=500;
+    index_this=bb(new_lab,K);
+    ll=length(index_this);
+    println("  ",str);
+
+   
+
+    dis3=0;
+    for i in index_this
+        for j in index_this
+            tmp_dis=sum((new_lab[i,:] .- new_lab[j,:]).^2)/t;
+            if dis3 < tmp_dis
+                dis3=tmp_dis;
+            end
+        end
+    end
+    
+    t2=time();
+    println("time",(t2-t1)*5);
+
+end
+close(fname)
